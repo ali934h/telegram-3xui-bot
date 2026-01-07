@@ -1,6 +1,7 @@
 import { handleStartCommand } from './handlers/start';
 import { handleSetupFlow } from './handlers/setup';
 import { handleAddClientFlow, handleInboundSelection } from './handlers/client';
+import { handleBulkClientFlow, handleBulkInboundSelection } from './handlers/bulk-client';
 import { getConversationState } from '../storage/kv';
 
 interface TelegramUpdate {
@@ -9,6 +10,11 @@ interface TelegramUpdate {
 		from: { id: number; first_name: string };
 		chat: { id: number };
 		text?: string;
+		document?: {
+			file_id: string;
+			file_name: string;
+			mime_type: string;
+		};
 	};
 	callback_query?: {
 		id: string;
@@ -54,6 +60,11 @@ export async function handleTelegramUpdate(update: TelegramUpdate, env: Env): Pr
 			return new Response('OK');
 		}
 
+		if (text === '➕➕ افزودن دسته‌جمعی') {
+			await handleBulkClientFlow(env, chatId, userId, 'start');
+			return new Response('OK');
+		}
+
 		if (text === '⚙️ تنظیمات پنل') {
 			await handleSetupFlow(env, chatId, userId, 'start');
 			return new Response('OK');
@@ -63,6 +74,12 @@ export async function handleTelegramUpdate(update: TelegramUpdate, env: Env): Pr
 		if (state && state.step) {
 			if (state.step.startsWith('client_')) {
 				await handleAddClientFlow(env, chatId, userId, state.step, text);
+			} else if (state.step.startsWith('bulk_')) {
+				if (message.document) {
+					await handleBulkClientFlow(env, chatId, userId, state.step, undefined, message.document);
+				} else if (text) {
+					await handleBulkClientFlow(env, chatId, userId, state.step, text);
+				}
 			} else {
 				await handleSetupFlow(env, chatId, userId, state.step, text);
 			}
@@ -86,6 +103,9 @@ export async function handleTelegramUpdate(update: TelegramUpdate, env: Env): Pr
 		if (callbackQuery.data.startsWith('inbound_')) {
 			const inboundId = parseInt(callbackQuery.data.replace('inbound_', ''));
 			await handleInboundSelection(env, chatId, userId, messageId, inboundId);
+		} else if (callbackQuery.data.startsWith('bulk_inbound_')) {
+			const inboundId = parseInt(callbackQuery.data.replace('bulk_inbound_', ''));
+			await handleBulkInboundSelection(env, chatId, userId, messageId, inboundId);
 		}
 	}
 
@@ -140,6 +160,24 @@ export async function editMessage(
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify(body),
 	});
+}
+
+export async function getFile(env: Env, fileId: string): Promise<string> {
+	const url = `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/getFile`;
+	const response = await fetch(url, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ file_id: fileId }),
+	});
+
+	const result: any = await response.json();
+	if (!result.ok || !result.result.file_path) {
+		throw new Error('خطا در دریافت فایل');
+	}
+
+	const fileUrl = `https://api.telegram.org/file/bot${env.TELEGRAM_BOT_TOKEN}/${result.result.file_path}`;
+	const fileResponse = await fetch(fileUrl);
+	return await fileResponse.text();
 }
 
 export async function answerCallbackQuery(env: Env, callbackQueryId: string): Promise<void> {

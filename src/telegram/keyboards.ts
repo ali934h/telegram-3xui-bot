@@ -1,6 +1,10 @@
 export function getMainMenuKeyboard() {
 	return {
-		keyboard: [['➕ افزودن کلاینت'], ['⚙️ تنظیمات پنل']],
+		keyboard: [
+			['➕ افزودن کلاینت'],
+			['➕➕ افزودن دسته‌جمعی'],
+			['⚙️ تنظیمات پنل'],
+		],
 		resize_keyboard: true,
 		persistent: true,
 	};
