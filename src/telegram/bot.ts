@@ -1,6 +1,5 @@
 import { handleStartCommand } from './handlers/start';
 import { handleSetupFlow } from './handlers/setup';
-import { handleAddClientFlow, handleInboundSelection } from './handlers/client';
 import { handleBulkClientFlow, handleBulkInboundSelection } from './handlers/bulk-client';
 import { getConversationState } from '../storage/kv';
 
@@ -56,11 +55,6 @@ export async function handleTelegramUpdate(update: TelegramUpdate, env: Env): Pr
 		}
 
 		if (text === '➕ افزودن کلاینت') {
-			await handleAddClientFlow(env, chatId, userId, 'start');
-			return new Response('OK');
-		}
-
-		if (text === '➕➕ افزودن دسته‌جمعی') {
 			await handleBulkClientFlow(env, chatId, userId, 'start');
 			return new Response('OK');
 		}
@@ -72,9 +66,7 @@ export async function handleTelegramUpdate(update: TelegramUpdate, env: Env): Pr
 
 		const state = await getConversationState(env, userId);
 		if (state && state.step) {
-			if (state.step.startsWith('client_')) {
-				await handleAddClientFlow(env, chatId, userId, state.step, text);
-			} else if (state.step.startsWith('bulk_')) {
+			if (state.step.startsWith('bulk_')) {
 				if (message.document) {
 					await handleBulkClientFlow(env, chatId, userId, state.step, undefined, message.document);
 				} else if (text) {
@@ -102,9 +94,6 @@ export async function handleTelegramUpdate(update: TelegramUpdate, env: Env): Pr
 
 		if (callbackQuery.data.startsWith('inbound_')) {
 			const inboundId = parseInt(callbackQuery.data.replace('inbound_', ''));
-			await handleInboundSelection(env, chatId, userId, messageId, inboundId);
-		} else if (callbackQuery.data.startsWith('bulk_inbound_')) {
-			const inboundId = parseInt(callbackQuery.data.replace('bulk_inbound_', ''));
 			await handleBulkInboundSelection(env, chatId, userId, messageId, inboundId);
 		}
 	}

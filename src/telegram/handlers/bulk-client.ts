@@ -44,7 +44,7 @@ export async function handleBulkClientFlow(
 					inline_keyboard: inbounds.map((inbound: any) => [
 						{
 							text: `${inbound.remark} (${inbound.protocol})`,
-							callback_data: `bulk_inbound_${inbound.id}`,
+							callback_data: `inbound_${inbound.id}`,
 						},
 					]),
 				};
@@ -52,7 +52,7 @@ export async function handleBulkClientFlow(
 				await sendMessage(
 					env,
 					chatId,
-					'📋 لیست Inbound های شما:\n\nلطفا یک inbound را برای افزودن دسته‌جمعی کلاینت‌ها انتخاب کنید:',
+					'📋 لیست Inbound های شما:\n\nلطفا یک inbound را برای افزودن کلاینت‌ها انتخاب کنید:',
 					keyboard
 				);
 			} catch (error: any) {
@@ -150,7 +150,7 @@ export async function handleBulkClientFlow(
 
 			await setConversationState(env, userId, null);
 
-			let reportMessage = `✅ افزودن دسته‌جمعی تکمیل شد!\n\n`;
+			let reportMessage = `✅ افزودن کلاینت‌ها تکمیل شد!\n\n`;
 			reportMessage += `📊 گزارش:\n`;
 			reportMessage += `✅ موفق: ${results.success}\n`;
 			reportMessage += `❌ ناموفق: ${results.failed}\n`;

@@ -2,7 +2,6 @@ export function getMainMenuKeyboard() {
 	return {
 		keyboard: [
 			['➕ افزودن کلاینت'],
-			['➕➕ افزودن دسته‌جمعی'],
 			['⚙️ تنظیمات پنل'],
 		],
 		resize_keyboard: true,
