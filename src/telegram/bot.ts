@@ -1,5 +1,6 @@
 import { handleStartCommand } from './handlers/start';
 import { handleSetupFlow } from './handlers/setup';
+import { handleAddClientFlow, handleInboundSelection } from './handlers/client';
 import { getConversationState } from '../storage/kv';
 
 interface TelegramUpdate {
@@ -48,9 +49,23 @@ export async function handleTelegramUpdate(update: TelegramUpdate, env: Env): Pr
 			return new Response('OK');
 		}
 
+		if (text === '➕ افزودن کلاینت') {
+			await handleAddClientFlow(env, chatId, userId, 'start');
+			return new Response('OK');
+		}
+
+		if (text === '⚙️ تنظیمات پنل') {
+			await handleSetupFlow(env, chatId, userId, 'start');
+			return new Response('OK');
+		}
+
 		const state = await getConversationState(env, userId);
 		if (state && state.step) {
-			await handleSetupFlow(env, chatId, userId, state.step, text);
+			if (state.step.startsWith('client_')) {
+				await handleAddClientFlow(env, chatId, userId, state.step, text);
+			} else {
+				await handleSetupFlow(env, chatId, userId, state.step, text);
+			}
 			return new Response('OK');
 		}
 
@@ -60,12 +75,18 @@ export async function handleTelegramUpdate(update: TelegramUpdate, env: Env): Pr
 	if (callbackQuery) {
 		const userId = callbackQuery.from.id;
 		const chatId = callbackQuery.message.chat.id;
+		const messageId = callbackQuery.message.message_id;
 
 		if (!allowedIds.includes(userId)) {
 			return new Response('OK');
 		}
 
 		await answerCallbackQuery(env, callbackQuery.id);
+
+		if (callbackQuery.data.startsWith('inbound_')) {
+			const inboundId = parseInt(callbackQuery.data.replace('inbound_', ''));
+			await handleInboundSelection(env, chatId, userId, messageId, inboundId);
+		}
 	}
 
 	return new Response('OK');
@@ -80,6 +101,32 @@ export async function sendMessage(
 	const url = `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`;
 	const body: any = {
 		chat_id: chatId,
+		text: text,
+		parse_mode: 'HTML',
+	};
+
+	if (replyMarkup) {
+		body.reply_markup = replyMarkup;
+	}
+
+	await fetch(url, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify(body),
+	});
+}
+
+export async function editMessage(
+	env: Env,
+	chatId: number,
+	messageId: number,
+	text: string,
+	replyMarkup?: any
+): Promise<void> {
+	const url = `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/editMessageText`;
+	const body: any = {
+		chat_id: chatId,
+		message_id: messageId,
 		text: text,
 		parse_mode: 'HTML',
 	};

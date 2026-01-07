@@ -33,13 +33,13 @@ export class PanelAPI {
 
 	async addClient(inboundId: number, clientData: any): Promise<any> {
 		return this.request(`/panel/api/inbounds/addClient`, {
-		method: 'POST',
-		body: JSON.stringify({
-			id: inboundId,
-			settings: JSON.stringify({
-				clients: [clientData],
+			method: 'POST',
+			body: JSON.stringify({
+				id: inboundId,
+				settings: JSON.stringify({
+					clients: [clientData],
+				}),
 			}),
-		}),
 		});
 	}
 }
