@@ -104,7 +104,7 @@ export async function answerCallbackQuery(env: Env, callbackQueryId: string): Pr
 	});
 }
 
-export async function registerWebhook(env: Env): Promise<Response> {
+export async function registerWebhook(request: Request, env: Env): Promise<Response> {
 	if (!env.TELEGRAM_BOT_TOKEN) {
 		return new Response(JSON.stringify({ error: 'TELEGRAM_BOT_TOKEN not set' }), {
 			status: 500,
@@ -112,10 +112,11 @@ export async function registerWebhook(env: Env): Promise<Response> {
 		});
 	}
 
-	const webhookUrl = `https://telegram-3xui-bot.YOUR_SUBDOMAIN.workers.dev/webhook`;
-	const url = `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/setWebhook`;
+	const url = new URL(request.url);
+	const webhookUrl = `${url.protocol}//${url.host}/webhook`;
+	const telegramUrl = `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/setWebhook`;
 
-	const response = await fetch(url, {
+	const response = await fetch(telegramUrl, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({ url: webhookUrl }),

@@ -5,7 +5,7 @@ export default {
 		const url = new URL(request.url);
 
 		if (url.pathname === '/registerWebhook') {
-			return registerWebhook(env);
+			return registerWebhook(request, env);
 		}
 
 		if (request.method === 'POST' && url.pathname === '/webhook') {
